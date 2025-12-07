@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>广西各市GDP数据可视化课程设计</title>
+    <script src="./echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px 35px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="rgba(255,255,255,0.05)"><circle cx="50" cy="50" r="40"/></svg>');
+            background-size: 60px 60px;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.95;
+            margin-bottom: 15px;
+            position: relative;
+            font-weight: 300;
+        }
+        
+        .data-process {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-top: 20px;
+            font-size: 14px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .process-steps {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            color: #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .step-text {
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .arrow {
+            color: white;
+            font-size: 20px;
+            margin: 0 5px;
+        }
+        
+        .charts-container {
+            display: flex;
+            flex-direction: column;
+            padding: 30px 35px;
+        }
+        
+        .chart-section {
+            margin-bottom: 45px;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f1f5f9;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .chart-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        .chart-title {
+            font-size: 22px;
+            color: #1e40af;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chart-container {
+            height: 550px;
+            width: 100%;
+            position: relative;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .quarter-selector, .city-selector {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background-color: white;
+            font-size: 15px;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 180px;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23334155" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            padding-right: 40px;
+            appearance: none;
+        }
+        
+        .quarter-selector:hover, .city-selector:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .quarter-selector:focus, .city-selector:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            background-color: #f8fafc;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .data-source {
+            text-align: right;
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f1f5f9;
+        }
+        
+        .stats-summary {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #64748b;
+            font-size: 14px;
+            background-color: #f1f5f9;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container {
+                padding: 15px;
+            }
+            
+            .chart-container {
+                height: 450px;
+            }
+            
+            .chart-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            
+            .controls {
+                width: 100%;
+            }
+            
+            .quarter-selector, .city-selector {
+                min-width: 100%;
+            }
+            
+            .process-steps {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+        
+        .echarts-loading {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 16px;
+            color: #64748b;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+        }
+        
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+            padding: 20px;
+            background-color: #fef2f2;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .chart-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .chart-btn {
+            padding: 6px 12px;
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .chart-btn:hover {
+            background-color: #e2e8f0;
+        }
+        
+        .no-echarts-warning {
+            text-align: center;
+            padding: 30px;
+            background-color: #fef3c7;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>广西各市GDP数据可视化课程设计</h1>
+            <div class="subtitle">基于2024-2025年季度数据的ECharts课程设计 | 数据来源：公开数据网站 + AI处理</div>
+            <div class="data-process">
+                <div>数据处理流程说明：</div>
+                <div class="process-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-text">从网站下载原始PDF数据</div>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-text">使用AI工具处理提取数据</div>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-text">数据清洗与格式转换</div>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-text">使用ECharts进行可视化</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="charts-container">
+            <!-- 如果ECharts未加载，显示提示 -->
+            <div id="echartsWarning" class="no-echarts-warning" style="display: none;">
+                <h3>ECharts库未找到</h3>
+                <p>请确保已下载echarts.min.js文件并放置在当前目录下。</p>
+                <p><a href="https://echarts.apache.org/zh/download.html" target="_blank">点击这里下载ECharts库</a></p>
+                <p style="margin-top: 10px; font-size: 12px;">下载后重命名为echarts.min.js并放置在与本HTML文件相同的目录</p>
+            </div>
+            
+            <!-- 统计概览 -->
+            <div class="stats-summary">
+                <div class="stat-card">
+                    <div class="stat-value">14</div>
+                    <div class="stat-label">地级市数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalGDP">21,487.03</div>
+                    <div class="stat-label">2025前三季度全区GDP(亿元)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="maxGrowth">7.5%</div>
+                    <div class="stat-label">最高累计增长率(防城港)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="nnGrowth">4.2%</div>
+                    <div class="stat-label">南宁市前三季度增长率</div>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-title">
+                    <span>图1: 广西各市GDP占比分布（交互式饼图）</span>
+                    <div class="controls">
+                        <span>选择季度：</span>
+                        <select id="quarterSelector" class="quarter-selector">
+                            <option value="0">2025年一季度</option>
+                            <option value="1">2025年二季度</option>
+                            <option value="2" selected>2025年三季度</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-toolbar">
+                    <button class="chart-btn" onclick="exportChartAsImage('pieChart', '广西各市GDP占比分布')">导出图片</button>
+                    <button class="chart-btn" onclick="resetPieChart()">重置视图</button>
+                </div>
+                <div id="pieChart" class="chart-container">
+                    <div id="pieLoading" class="echarts-loading">
+                        <div class="loading-spinner"></div>
+                        <div>正在加载图表数据...</div>
+                    </div>
+                </div>
+                <div class="data-source">
+                    数据来源：广西GDP_2025年季度累计值_聚汇数据 | 注：钦州市2025年一季度数据缺失，已基于趋势估算为417.37亿元
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-title">
+                    <span>图2: 各市GDP总量与增长率变化趋势（混合图表）</span>
+                    <div class="controls">
+                        <span>选择城市：</span>
+                        <select id="citySelector" class="city-selector">
+                            <!-- 城市选项将通过JavaScript动态生成 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-toolbar">
+                    <button class="chart-btn" onclick="exportChartAsImage('mixedChart', '各市GDP变化趋势')">导出图片</button>
+                    <button class="chart-btn" onclick="resetMixedChart()">重置视图</button>
+                    <button class="chart-btn" onclick="toggleChartType()">切换图表类型</button>
+                </div>
+                <div id="mixedChart" class="chart-container">
+                    <div id="mixedLoading" class="echarts-loading">
+                        <div class="loading-spinner"></div>
+                        <div>正在加载图表数据...</div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2563eb;"></div>
+                        <span>GDP总量（亿元）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ef4444;"></div>
+                        <span>累计增长率（%）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #10b981;"></div>
+                        <span>季度环比增长率（%）</span>
+                    </div>
+                </div>
+                <div class="data-source">数据来源：各市季度数据、广西GDP_2025年季度累计值_聚汇数据 | 数据已通过AI工具处理提取</div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>ECharts课程设计 - 大三数据分析项目 | 展示从数据采集到可视化的完整流程</p>
+            <p>数据处理方法：网站下载PDF → AI提取数据 → 数据清洗 → ECharts可视化</p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== 全局变量和配置 ====================
+        let pieChartInstance = null;
+        let mixedChartInstance = null;
+        let currentChartType = 'mixed'; // 'mixed' 或 'line'
+        
+        // 广西各市名称列表（按GDP总量排序）
+        const cities = [
+            "南宁市", "柳州市", "桂林市", "玉林市", "百色市",
+            "北海市", "梧州市", "贵港市", "崇左市", "河池市", 
+            "防城港市", "来宾市", "贺州市", "钦州市"
+        ];
+        
+        // 2025年各季度GDP累计值数据（亿元）
+        const gdpData = {
+            "南宁市": [1508.09, 3053.09, 4688.69],
+            "柳州市": [720.03, 1456.63, 2230.99],
+            "桂林市": [590.40, 1151.85, 1821.17],
+            "玉林市": [562.77, 1108.10, 1752.39],
+            "百色市": [484.66, 991.48, 1523.64],
+            "北海市": [435.84, 917.92, 1409.89],
+            "梧州市": [375.66, 785.89, 1206.41],
+            "贵港市": [368.41, 727.04, 1169.00],
+            "崇左市": [335.09, 650.73, 993.59],
+            "河池市": [321.33, 669.91, 1036.14],
+            "防城港市": [262.15, 573.13, 887.47],
+            "来宾市": [230.34, 477.49, 758.12],
+            "贺州市": [221.78, 451.71, 684.11],
+            "钦州市": [417.37, 835.99, 1325.42] // 一季度数据为估算值
+        };
+        
+        // 各季度GDP增长率数据（%）
+        const growthData = {
+            "南宁市": [5.3, 3.7, 4.2],
+            "柳州市": [4.6, 7.0, 6.7],
+            "桂林市": [5.0, 4.8, 4.0],
+            "玉林市": [6.3, 6.1, 6.0],
+            "百色市": [6.2, 6.0, 6.3],
+            "北海市": [6.4, 3.3, 5.3],
+            "梧州市": [6.8, 6.8, 5.7],
+            "贵港市": [5.0, 6.0, 5.4],
+            "崇左市": [7.3, 7.2, 6.5],
+            "河池市": [5.5, 4.4, 4.4],
+            "防城港市": [7.3, 7.5, 7.0],
+            "来宾市": [5.9, 6.3, 6.2],
+            "贺州市": [7.4, 7.2, 5.1],
+            "钦州市": [5.9, 6.3, 5.2]
+        };
+        
+        // 季度标签
+        const quarters = ["2025年一季度", "2025年二季度", "2025年三季度"];
+        const quarterShort = ["Q1", "Q2", "Q3"];
+        
+        // 颜色方案
+        const colorPalette = [
+            '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe',
+            '#ef4444', '#f87171', '#fca5a5', '#fecaca', '#fee2e2',
+            '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'
+        ];
+        
+        // ==================== 工具函数 ====================
+        function getElementSafe(id) {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.warn(`元素 ${id} 未找到`);
+                return null;
+            }
+            return element;
+        }
+        
+        function checkEChartsLoaded() {
+            if (typeof echarts === 'undefined') {
+                const warning = getElementSafe('echartsWarning');
+                if (warning) warning.style.display = 'block';
+                return false;
+            }
+            return true;
+        }
+        
+        function getCitiesSortedByGDP(quarterIndex) {
+            return [...cities].sort((a, b) => gdpData[b][quarterIndex] - gdpData[a][quarterIndex]);
+        }
+        
+        function exportChartAsImage(chartId, filename) {
+            const chart = chartId === 'pieChart' ? pieChartInstance : mixedChartInstance;
+            if (!chart) {
+                console.error('图表实例未找到');
+                return;
+            }
+            
+            try {
+                const imgUrl = chart.getDataURL({
+                    type: 'png',
+                    pixelRatio: 2,
+                    backgroundColor: '#fff'
+                });
+                
+                const link = document.createElement('a');
+                link.download = `${filename}_${new Date().getTime()}.png`;
+                link.href = imgUrl;
+                link.click();
+            } catch (error) {
+                console.error('导出图片失败:', error);
+            }
+        }
+        
+        function resetPieChart() {
+            if (pieChartInstance) {
+                try {
+                    pieChartInstance.dispatchAction({
+                        type: 'legendUnSelect',
+                        name: 'GDP占比'
+                    });
+                    pieChartInstance.dispatchAction({
+                        type: 'legendSelect',
+                        name: 'GDP占比'
+                    });
+                } catch (error) {
+                    console.error('重置饼图失败:', error);
+                }
+            }
+        }
+        
+        function resetMixedChart() {
+            if (mixedChartInstance) {
+                try {
+                    mixedChartInstance.dispatchAction({
+                        type: 'dataZoom',
+                        start: 0,
+                        end: 100
+                    });
+                } catch (error) {
+                    console.error('重置混合图失败:', error);
+                }
+            }
+        }
+        
+        function toggleChartType() {
+            if (!mixedChartInstance) {
+                console.error('混合图表实例未初始化');
+                return;
+            }
+            
+            currentChartType = currentChartType === 'mixed' ? 'line' : 'mixed';
+            const cityName = document.getElementById('citySelector')?.value || "南宁市";
+            try {
+                const option = currentChartType === 'mixed' ? getMixedOption(cityName) : getLineChartOption(cityName);
+                mixedChartInstance.setOption(option, true);
+            } catch (error) {
+                console.error('切换图表类型失败:', error);
+            }
+        }
+        
+        // ==================== 图表配置函数 ====================
+        function getPieOption(quarterIndex) {
+            const sortedCities = getCitiesSortedByGDP(quarterIndex);
+            const pieData = sortedCities.map((city, index) => ({
+                name: city,
+                value: gdpData[city][quarterIndex],
+                itemStyle: { color: colorPalette[index % colorPalette.length] }
+            }));
+            
+            const totalGDP = pieData.reduce((sum, item) => sum + item.value, 0);
+            const top3GDP = pieData.slice(0, 3).reduce((sum, item) => sum + item.value, 0);
+            const top3Percentage = ((top3GDP / totalGDP) * 100).toFixed(1);
+            
+            // 更新统计卡片
+            if (quarterIndex === 2) {
+                const totalGDPElement = getElementSafe('totalGDP');
+                if (totalGDPElement) {
+                    totalGDPElement.textContent = totalGDP.toLocaleString('zh-CN', {minimumFractionDigits: 2});
+                }
+            }
+            
+            return {
+                title: {
+                    text: `${quarters[quarterIndex]}广西各市GDP占比分布`,
+                    subtext: `全区GDP总量: ${totalGDP.toLocaleString('zh-CN', {minimumFractionDigits: 2})} 亿元 | 前三城市占比: ${top3Percentage}%`,
+                    left: 'center',
+                    top: 15,
+                    textStyle: {
+                        fontSize: 20,
+                        color: '#1e293b',
+                        fontWeight: 'bold'
+                    },
+                    subtextStyle: {
+                        fontSize: 14,
+                        color: '#64748b',
+                        marginTop: 8
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        const percent = params.percent.toFixed(1);
+                        const value = params.value.toLocaleString('zh-CN', {minimumFractionDigits: 2});
+                        const growth = growthData[params.name] ? growthData[params.name][quarterIndex] : 'N/A';
+                        return `
+                            <div style="padding: 8px; max-width: 300px;">
+                                <div style="font-weight: bold; margin-bottom: 8px; color: #1e40af;">${params.name}</div>
+                                <div style="margin: 5px 0;">GDP: <b>${value} 亿元</b></div>
+                                <div style="margin: 5px 0;">占比: <b>${percent}%</b></div>
+                                <div style="margin: 5px 0;">累计增长率: <b>${growth}%</b></div>
+                            </div>
+                        `;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1
+                },
+                legend: {
+                    type: 'scroll',
+                    orient: 'vertical',
+                    right: 25,
+                    top: 'center',
+                    height: 350,
+                    textStyle: {
+                        fontSize: 13,
+                        color: '#475569'
+                    },
+                    pageTextStyle: {
+                        color: '#64748b'
+                    },
+                    pageIconColor: '#3b82f6',
+                    pageIconInactiveColor: '#cbd5e1'
+                },
+                series: [{
+                    name: 'GDP占比',
+                    type: 'pie',
+                    radius: ['38%', '65%'],
+                    center: ['35%', '55%'],
+                    avoidLabelOverlap: true,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 3
+                    },
+                    label: {
+                        show: true,
+                        formatter: function(params) {
+                            // 确保所有城市都显示标签
+                            const name = params.name.length > 3 ? params.name.substring(0, 3) + '...' : params.name;
+                            return `${name}\n${params.percent.toFixed(1)}%`;
+                        },
+                        fontSize: 11,
+                        lineHeight: 16,
+                        textStyle: {
+                            overflow: 'break',
+                            width: 50
+                        }
+                    },
+                    emphasis: {
+                        label: { 
+                            show: true, 
+                            fontSize: 14, 
+                            fontWeight: 'bold' 
+                        },
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.2)'
+                        }
+                    },
+                    labelLine: { 
+                        show: true, 
+                        length: 15, 
+                        length2: 10,
+                        smooth: 0.2,
+                        lineStyle: {
+                            width: 1,
+                            type: 'solid'
+                        }
+                    },
+                    data: pieData,
+                    selectedMode: 'single'
+                }],
+                color: colorPalette,
+                animation: true,
+                animationDuration: 1000,
+                animationEasing: 'cubicOut'
+            };
+        }
+        
+        function getMixedOption(cityName) {
+            const cityGDP = gdpData[cityName] || [0, 0, 0];
+            const cityGrowth = growthData[cityName] || [0, 0, 0];
+            
+            // 计算季度环比增长率
+            const quarterGrowth = [];
+            for (let i = 0; i < cityGDP.length; i++) {
+                if (i === 0) {
+                    quarterGrowth.push(null);
+                } else {
+                    const growth = ((cityGDP[i] - cityGDP[i-1]) / cityGDP[i-1] * 100).toFixed(1);
+                    quarterGrowth.push(parseFloat(growth));
+                }
+            }
+            
+            return {
+                title: {
+                    text: `${cityName}GDP总量与增长率变化趋势`,
+                    subtext: `2025年一季度至三季度数据 | 累计增长率: ${cityGrowth[2]}%`,
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 20,
+                        color: '#1e293b',
+                        fontWeight: 'bold'
+                    },
+                    subtextStyle: {
+                        fontSize: 14,
+                        color: '#64748b',
+                        marginTop: 6
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { 
+                        type: 'cross',
+                        crossStyle: {
+                            color: '#999'
+                        }
+                    },
+                    formatter: function(params) {
+                        let content = `<div style="padding: 8px; max-width: 300px;">`;
+                        content += `<div style="font-weight: bold; margin-bottom: 8px; color: #1e40af;">${cityName}</div>`;
+                        
+                        params.forEach(item => {
+                            let value = item.value;
+                            let unit = item.seriesName.includes('GDP') ? '亿元' : '%';
+                            let formattedValue = item.seriesName.includes('GDP') ? 
+                                value.toLocaleString('zh-CN', {minimumFractionDigits: 2}) : 
+                                (value ? value.toFixed(1) : 'N/A');
+                            
+                            content += `<div style="margin: 5px 0; display: flex; align-items: center;">
+                                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${item.color};margin-right:8px;"></span>
+                                <span>${item.seriesName}: <b>${formattedValue}${unit}</b></span>
+                            </div>`;
+                        });
+                        
+                        content += `</div>`;
+                        return content;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1
+                },
+                legend: {
+                    data: ['GDP总量', '累计增长率', '季度环比增长率'],
+                    top: 50,
+                    right: 30,
+                    textStyle: {
+                        color: '#475569'
+                    }
+                },
+                grid: {
+                    left: 70,
+                    right: 100,
+                    top: 100,
+                    bottom: 50
+                },
+                xAxis: [{
+                    type: 'category',
+                    data: quarterShort,
+                    axisLabel: {
+                        fontSize: 14,
+                        color: '#475569'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#cbd5e1'
+                        }
+                    }
+                }],
+                yAxis: [
+                    {
+                        type: 'value',
+                        name: 'GDP总量（亿元）',
+                        nameTextStyle: {
+                            fontSize: 13,
+                            color: '#475569',
+                            padding: [0, 0, 0, 10]
+                        },
+                        axisLabel: {
+                            formatter: '{value}',
+                            fontSize: 12,
+                            color: '#64748b'
+                        },
+                        axisLine: {
+                            show: true,
+                            lineStyle: {
+                                color: '#cbd5e1'
+                            }
+                        },
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                type: 'dashed',
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    {
+                        type: 'value',
+                        name: '增长率（%）',
+                        nameTextStyle: {
+                            fontSize: 13,
+                            color: '#475569',
+                            padding: [0, 0, 0, 10]
+                        },
+                        position: 'right',
+                        axisLabel: {
+                            formatter: '{value}%',
+                            fontSize: 12,
+                            color: '#64748b'
+                        },
+                        axisLine: {
+                            show: true,
+                            lineStyle: {
+                                color: '#cbd5e1'
+                            }
+                        },
+                        splitLine: {
+                            show: false
+                        }
+                    }
+                ],
+                series: [
+                    {
+                        name: 'GDP总量',
+                        type: 'bar',
+                        yAxisIndex: 0,
+                        data: cityGDP,
+                        itemStyle: { 
+                            color: '#2563eb', 
+                            borderRadius: [4, 4, 0, 0] 
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: (params) => params.value.toLocaleString('zh-CN', {minimumFractionDigits: 1}),
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#1e40af'
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(37, 99, 235, 0.5)'
+                            }
+                        },
+                        animationDelay: function(idx) { 
+                            return idx * 200; 
+                        }
+                    },
+                    {
+                        name: '累计增长率',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: cityGrowth,
+                        itemStyle: { color: '#ef4444' },
+                        label: { 
+                            show: true, 
+                            position: 'top', 
+                            formatter: '{c}%',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#dc2626'
+                        },
+                        lineStyle: { width: 4 },
+                        symbol: 'circle',
+                        symbolSize: 10,
+                        emphasis: {
+                            lineStyle: { width: 6 },
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: 'rgba(239, 68, 68, 0.5)'
+                            }
+                        },
+                        animationDelay: function(idx) { 
+                            return idx * 200 + 100; 
+                        }
+                    },
+                    {
+                        name: '季度环比增长率',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: quarterGrowth,
+                        itemStyle: { color: '#10b981' },
+                        lineStyle: { 
+                            width: 3, 
+                            type: 'dashed' 
+                        },
+                        symbol: 'diamond',
+                        symbolSize: 8,
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: (params) => params.value ? `${params.value}%` : '',
+                            fontSize: 11,
+                            color: '#059669'
+                        },
+                        animationDelay: function(idx) { 
+                            return idx * 200 + 200; 
+                        }
+                    }
+                ],
+                animation: true,
+                animationDuration: 1500,
+                animationEasing: 'elasticOut'
+            };
+        }
+        
+        function getLineChartOption(cityName) {
+            const cityGDP = gdpData[cityName] || [0, 0, 0];
+            const cityGrowth = growthData[cityName] || [0, 0, 0];
+            
+            return {
+                title: {
+                    text: `${cityName}GDP增长率变化趋势`,
+                    subtext: `2025年一季度至三季度数据`,
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 20,
+                        color: '#1e293b',
+                        fontWeight: 'bold'
+                    },
+                    subtextStyle: {
+                        fontSize: 14,
+                        color: '#64748b',
+                        marginTop: 6
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' },
+                    formatter: function(params) {
+                        let content = `<div style="padding: 8px; max-width: 300px;">`;
+                        content += `<div style="font-weight: bold; margin-bottom: 8px; color: #1e40af;">${cityName}</div>`;
+                        
+                        params.forEach(item => {
+                            let value = item.value;
+                            let unit = item.seriesName.includes('GDP') ? '亿元' : '%';
+                            let formattedValue = item.seriesName.includes('GDP') ? 
+                                value.toLocaleString('zh-CN', {minimumFractionDigits: 2}) : 
+                                value.toFixed(1);
+                            
+                            content += `<div style="margin: 5px 0; display: flex; align-items: center;">
+                                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${item.color};margin-right:8px;"></span>
+                                <span>${item.seriesName}: <b>${formattedValue}${unit}</b></span>
+                            </div>`;
+                        });
+                        
+                        content += `</div>`;
+                        return content;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1
+                },
+                legend: {
+                    data: ['GDP总量', '累计增长率'],
+                    top: 50,
+                    right: 30,
+                    textStyle: {
+                        color: '#475569'
+                    }
+                },
+                grid: {
+                    left: 70,
+                    right: 100,
+                    top: 100,
+                    bottom: 50
+                },
+                xAxis: [{
+                    type: 'category',
+                    data: quarterShort,
+                    axisLabel: {
+                        fontSize: 14,
+                        color: '#475569'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#cbd5e1'
+                        }
+                    }
+                }],
+                yAxis: [
+                    {
+                        type: 'value',
+                        name: 'GDP总量（亿元）',
+                        nameTextStyle: {
+                            fontSize: 13,
+                            color: '#475569',
+                            padding: [0, 0, 0, 10]
+                        },
+                        position: 'left',
+                        axisLabel: {
+                            formatter: '{value}',
+                            fontSize: 12,
+                            color: '#64748b'
+                        },
+                        axisLine: {
+                            show: true,
+                            lineStyle: {
+                                color: '#cbd5e1'
+                            }
+                        },
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                type: 'dashed',
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    {
+                        type: 'value',
+                        name: '增长率（%）',
+                        nameTextStyle: {
+                            fontSize: 13,
+                            color: '#475569',
+                            padding: [0, 0, 0, 10]
+                        },
+                        position: 'right',
+                        axisLabel: {
+                            formatter: '{value}%',
+                            fontSize: 12,
+                            color: '#64748b'
+                        },
+                        axisLine: {
+                            show: true,
+                            lineStyle: {
+                                color: '#cbd5e1'
+                            }
+                        },
+                        splitLine: {
+                            show: false
+                        }
+                    }
+                ],
+                series: [
+                    {
+                        name: 'GDP总量',
+                        type: 'line',
+                        yAxisIndex: 0,
+                        data: cityGDP,
+                        itemStyle: { color: '#2563eb' },
+                        lineStyle: { width: 4 },
+                        symbol: 'circle',
+                        symbolSize: 8,
+                        label: { 
+                            show: true, 
+                            position: 'top',
+                            formatter: (params) => params.value.toLocaleString('zh-CN', {minimumFractionDigits: 1})
+                        }
+                    },
+                    {
+                        name: '累计增长率',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        data: cityGrowth,
+                        itemStyle: { color: '#ef4444' },
+                        lineStyle: { width: 4, type: 'dashed' },
+                        symbol: 'circle',
+                        symbolSize: 8,
+                        label: { 
+                            show: true, 
+                            position: 'top', 
+                            formatter: '{c}%' 
+                        }
+                    }
+                ],
+                animation: true,
+                animationDuration: 1500,
+                animationEasing: 'elasticOut'
+            };
+        }
+        
+        // ==================== 主初始化函数 ====================
+        function initializeCharts() {
+            // 防止重复初始化
+            if (window.chartsInitialized) {
+                console.log('图表已初始化，跳过');
+                return;
+            }
+            
+            if (!checkEChartsLoaded()) return;
+            
+            try {
+                // 初始化城市选择器
+                const citySelector = getElementSafe('citySelector');
+                if (citySelector) {
+                    citySelector.innerHTML = '';
+                    cities.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        if (city === "南宁市") option.selected = true;
+                        citySelector.appendChild(option);
+                    });
+                }
+                
+                // 初始化饼图
+                const pieChartDom = getElementSafe('pieChart');
+                if (!pieChartDom) {
+                    console.error('饼图容器未找到');
+                    return;
+                }
+                
+                pieChartInstance = echarts.init(pieChartDom);
+                
+                // 初始化混合图表
+                const mixedChartDom = getElementSafe('mixedChart');
+                if (!mixedChartDom) {
+                    console.error('混合图表容器未找到');
+                    return;
+                }
+                
+                mixedChartInstance = echarts.init(mixedChartDom);
+                
+                // 显示ECharts加载动画
+                pieChartInstance.showLoading();
+                mixedChartInstance.showLoading();
+                
+                // 模拟异步数据加载
+                setTimeout(() => {
+                    try {
+                        // 安全地隐藏加载提示
+                        const pieLoading = getElementSafe('pieLoading');
+                        const mixedLoading = getElementSafe('mixedLoading');
+                        
+                        if (pieLoading) pieLoading.style.display = 'none';
+                        if (mixedLoading) mixedLoading.style.display = 'none';
+                        
+                        // 设置图表选项
+                        pieChartInstance.setOption(getPieOption(2));
+                        mixedChartInstance.setOption(getMixedOption("南宁市"));
+                        
+                        // 隐藏ECharts加载动画
+                        pieChartInstance.hideLoading();
+                        mixedChartInstance.hideLoading();
+                        
+                        // 标记初始化完成
+                        window.chartsInitialized = true;
+                        console.log('ECharts图表初始化完成');
+                    } catch (error) {
+                        console.error('设置图表选项时出错:', error);
+                        // 显示错误信息
+                        const errorMsg = '<div class="error-message">图表加载失败: ' + error.message + '</div>';
+                        if (pieChartDom) pieChartDom.innerHTML = errorMsg;
+                        if (mixedChartDom) mixedChartDom.innerHTML = errorMsg;
+                        
+                        // 重置标记以便重试
+                        window.chartsInitialized = false;
+                    }
+                }, 1500);
+                
+                // 绑定事件监听器
+                const quarterSelector = getElementSafe('quarterSelector');
+                if (quarterSelector) {
+                    quarterSelector.addEventListener('change', function() {
+                        const quarterIndex = parseInt(this.value);
+                        try {
+                            pieChartInstance.setOption(getPieOption(quarterIndex));
+                        } catch (error) {
+                            console.error('更新饼图失败:', error);
+                        }
+                    });
+                }
+                
+                if (citySelector) {
+                    citySelector.addEventListener('change', function() {
+                        const cityName = this.value;
+                        try {
+                            const option = currentChartType === 'mixed' ? getMixedOption(cityName) : getLineChartOption(cityName);
+                            mixedChartInstance.setOption(option);
+                        } catch (error) {
+                            console.error('更新混合图失败:', error);
+                        }
+                    });
+                }
+                
+                // 饼图点击事件 - 图表联动
+                pieChartInstance.on('click', function(params) {
+                    if (params.componentType === 'series' && params.seriesType === 'pie') {
+                        const cityName = params.name;
+                        if (citySelector) {
+                            citySelector.value = cityName;
+                            try {
+                                const option = currentChartType === 'mixed' ? getMixedOption(cityName) : getLineChartOption(cityName);
+                                mixedChartInstance.setOption(option);
+                            } catch (error) {
+                                console.error('联动更新图表失败:', error);
+                            }
+                        }
+                    }
+                });
+                
+                // 窗口大小变化时重绘图表
+                window.addEventListener('resize', function() {
+                    if (pieChartInstance) pieChartInstance.resize();
+                    if (mixedChartInstance) mixedChartInstance.resize();
+                });
+                
+            } catch (error) {
+                console.error('初始化图表时出错:', error);
+                const errorMsg = '<div class="error-message">图表初始化失败: ' + error.message + '</div>';
+                const pieChartDom = getElementSafe('pieChart');
+                const mixedChartDom = getElementSafe('mixedChart');
+                if (pieChartDom) pieChartDom.innerHTML = errorMsg;
+                if (mixedChartDom) mixedChartDom.innerHTML = errorMsg;
+                
+                // 重置标记以便重试
+                window.chartsInitialized = false;
+            }
+        }
+        
+        // ==================== 页面加载完成后初始化 ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待ECharts加载
+            function waitForECharts(callback, maxAttempts = 15, interval = 200) {
+                let attempts = 0;
+                function check() {
+                    if (typeof echarts !== 'undefined') {
+                        callback(true);
+                    } else if (attempts < maxAttempts) {
+                        attempts++;
+                        setTimeout(check, interval);
+                    } else {
+                        callback(false);
+                    }
+                }
+                check();
+            }
+            
+            waitForECharts(function(success) {
+                if (success) {
+                    initializeCharts();
+                } else {
+                    const pieLoading = getElementSafe('pieLoading');
+                    const mixedLoading = getElementSafe('mixedLoading');
+                    const warning = getElementSafe('echartsWarning');
+                    
+                    if (warning) warning.style.display = 'block';
+                    if (pieLoading) pieLoading.innerHTML = '<div class="error-message">ECharts库加载超时，请检查echarts.min.js文件是否已下载</div>';
+                    if (mixedLoading) mixedLoading.innerHTML = '<div class="error-message">ECharts库加载超时，请检查echarts.min.js文件是否已下载</div>';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
